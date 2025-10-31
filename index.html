@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Diabetes Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- NEW: Load Chart.js Annotation Plugin (FIXED typo xintegrity -> integrity) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" xintegrity="sha512-8M0Q+bYISR/PcKsvN9QhP2XGgSUuQJg4U/TwyL/J/5L5GgC/6T5X/fsM/a9doN/UTr/p/J/jQe0vQo9gbw5w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        /* Use a clean, modern font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        input:focus, select:focus {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+            outline: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">
+            Interactive Diabetes Predictor
+        </h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left Column: Inputs -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Patient Information</h2>
+                <p class="text-gray-600 mb-6 text-sm">
+                    Change any value to see the prediction and "What-If" graph update in real-time.
+                </p>
+
+                <!-- Prediction Input Form -->
+                <form id="prediction-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="pregnancies" class="block text-sm font-medium text-gray-700">Pregnancies</label>
+                            <input type="number" id="pregnancies" value="1" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="glucose" class="block text-sm font-medium text-gray-700">Glucose</label>
+                            <input type="number" id="glucose" value="103" min="0" step="any" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="bloodPressure" class="block text-sm font-medium text-gray-700">Blood Pressure</label>
+                            <input type="number" id="bloodPressure" value="72" min="0" step="any" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="skinThickness" class="block text-sm font-medium text-gray-700">Skin Thickness</label>
+                            <input type="number" id="skinThickness" value="29" min="0" step="any" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="insulin" class="block text-sm font-medium text-gray-700">Insulin</label>
+                            <input type="number" id="insulin" value="155" min="0" step="any" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="bmi" class="block text-sm font-medium text-gray-700">BMI</label>
+                            <input type="number" id="bmi" value="32.4" min="0" step="any" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="dpf" class="block text-sm font-medium text-gray-700">DPF</label>
+                            <input type="number" id="dpf" value="0.47" min="0" step="any" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label for="age" class="block text-sm font-medium text-gray-700">Age</label>
+                            <input type="number" id="age" value="33" min="0" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Results & Graph -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
+                
+                <!-- Prediction Result Area -->
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Prediction Result</h2>
+                <div id="result" class="p-4 rounded-md text-center text-lg font-medium mb-6">
+                    <!-- Result will be inserted here -->
+                </div>
+
+                <!-- What-If Analysis -->
+                <div class="mt-8">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">"What-If" Analysis</h2>
+                    <div class="flex items-center mb-4">
+                        <label for="whatIfSelect" class="block text-sm font-medium text-gray-700 mr-2">Analyze impact of:</label>
+                        <select id="whatIfSelect" class="block p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="0">Pregnancies</option>
+                            <option value="1" selected>Glucose</option>
+                            <option value="2">Blood Pressure</option>
+                            <option value="3">Skin Thickness</option>
+                            <option value="4">Insulin</option>
+                            <option value="5">BMI</option>
+                            <option value="6">Diabetes Pedigree (DPF)</option>
+                            <option value="7">Age</option>
+                        </select>
+                    </div>
+                    
+                    <div class="relative" style="height: 400px;">
+                        <canvas id="whatIfChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Start of Embedded ML Model ---
+        
+        // These values come from your Python notebook.
+        // Make sure they match the output of your final cell.
+        const SCALER_MEANS = [3.842019543159609, 121.97557003257328, 72.41693811074918, 29.11074918566775, 155.1530944625407, 32.441368078175895, 0.4745162866449511, 33.32247557003257];
+        const SCALER_SCALES = [3.364718024227917, 30.80621216531308, 12.11049380948956, 10.01633630048694, 118.02636970034611, 6.880467715140327, 0.3323063467501666, 11.751332605891338];
+        const MODEL_INTERCEPT = [-0.7888710419958362];
+        const MODEL_COEFS = [0.3804434036611394, 1.218522300711311, -0.12995383333331168, -0.01826645065438888, -0.07340156381896899, 0.7718161042562479, 0.3207038371305716, 0.22013860010991902];
+
+        // Ranges for the "what-if" graph
+        const FEATURE_RANGES = [
+            { name: 'Pregnancies', min: 0, max: 17, steps: 18 },
+            { name: 'Glucose', min: 50, max: 200, steps: 15 },
+            { name: 'Blood Pressure', min: 40, max: 120, steps: 16 },
+            { name: 'Skin Thickness', min: 7, max: 60, steps: 15 },
+            { name: 'Insulin', min: 15, max: 500, steps: 20 },
+            { name: 'BMI', min: 18, max: 60, steps: 21 },
+            { name: 'Diabetes Pedigree (DPF)', min: 0.0, max: 2.0, steps: 20 },
+            { name: 'Age', min: 21, max: 81, steps: 20 }
+        ];
+
+        /**
+         * Predicts the probability of diabetes given user inputs.
+         */
+        function predictDiabetes(inputs) {
+            const scaledInputs = inputs.map((val, i) => (val - SCALER_MEANS[i]) / SCALER_SCALES[i]);
+            let z = MODEL_INTERCEPT[0];
+            for (let i = 0; i < scaledInputs.length; i++) {
+                z += scaledInputs[i] * MODEL_COEFS[i];
+            }
+            const probability = 1 / (1 + Math.exp(-z));
+            return {
+                prediction: probability > 0.5 ? 1 : 0,
+                probability: probability
+            };
+        }
+
+        // --- End of Embedded ML Model ---
+
+        // --- Chart & UI Logic ---
+        const form = document.getElementById('prediction-form');
+        const resultDiv = document.getElementById('result');
+        const whatIfSelect = document.getElementById('whatIfSelect');
+        const whatIfChartCtx = document.getElementById('whatIfChart').getContext('2d');
+        let whatIfChartInstance = null;
+
+        // The plugin auto-registers itself. We just need to include the script.
+        // Removed the line: Chart.register(ChartAnnotation); which caused the error.
+
+        /**
+         * Updates the main prediction text.
+         */
+        function updatePrediction(result) {
+            resultDiv.classList.remove('bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800');
+            
+            if (result.prediction === 1) {
+                resultDiv.classList.add('bg-red-100', 'text-red-800');
+                resultDiv.innerHTML = `<strong>Result:</strong> Positive for Diabetes <br> (Probability: ${(result.probability * 100).toFixed(1)}%)`;
+            } else {
+                resultDiv.classList.add('bg-green-100', 'text-green-800');
+                resultDiv.innerHTML = `<strong>Result:</strong> Negative for Diabetes <br> (Probability: ${((1 - result.probability) * 100).toFixed(1)}%)`;
+            }
+        }
+
+        /**
+         * Draws the "what-if" line chart.
+         */
+        function drawWhatIfGraph(currentInputs, currentResult) {
+            const featureIndex = parseInt(whatIfSelect.value);
+            const feature = FEATURE_RANGES[featureIndex];
+            
+            // const labels = []; // No longer needed
+            const dataPoints = []; // Will be an array of {x, y} objects
+            
+            const stepSize = (feature.max - feature.min) / (feature.steps - 1);
+
+            for (let i = 0; i < feature.steps; i++) {
+                let value = feature.min + (i * stepSize);
+                
+                // For DPF, round to 2 decimal places
+                if (feature.name === 'Diabetes Pedigree (DPF)') {
+                    value = parseFloat(value.toFixed(2));
+                }
+                
+                const tempInputs = [...currentInputs];
+                tempInputs[featureIndex] = value;
+                
+                const result = predictDiabetes(tempInputs);
+                
+                // Push an {x, y} object
+                dataPoints.push({x: value, y: result.probability});
+            }
+
+            // Destroy the old chart if it exists
+            if (whatIfChartInstance) {
+                whatIfChartInstance.destroy();
+            }
+
+            // NEW: Get the patient's current value for the selected feature
+            const currentXValue = currentInputs[featureIndex];
+            const currentYValue = currentResult.probability;
+
+            // Create the new chart
+            whatIfChartInstance = new Chart(whatIfChartCtx, {
+                type: 'line',
+                data: {
+                    // labels: labels, // No longer needed
+                    datasets: [{
+                        label: `Probability of Diabetes vs. ${feature.name}`,
+                        data: dataPoints, // Pass the {x, y} objects
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Probability of Diabetes' },
+                            min: 0,
+                            max: 1
+                        },
+                        x: {
+                            type: 'linear', // <-- THIS IS THE KEY FIX
+                            title: { display: true, text: feature.name },
+                            min: feature.min, // <-- FIX: Force axis to match data min
+                            max: feature.max, // <-- FIX: Force axis to match data max
+                            // Handle DPF formatting on the axis
+                            ticks: {
+                                callback: function(value, index, ticks) {
+                                    return feature.name === 'Diabetes Pedigree (DPF)' ? value.toFixed(2) : value;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                // Tooltip for 'x' value
+                                title: function(context) {
+                                    const xValue = context[0].parsed.x;
+                                    return `${feature.name}: ${feature.name === 'Diabetes Pedigree (DPF)' ? xValue.toFixed(2) : xValue.toFixed(1)}`;
+                                },
+                                label: (context) => {
+                                    let label = context.dataset.label || '';
+                                    if (label) { 
+                                        label = 'Probability'; // Shorter label
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += ': ' + (context.parsed.y * 100).toFixed(1) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        // NEW: Add annotation plugin configuration
+                        annotation: {
+                            annotations: {
+                                // A vertical line for the patient's current X value
+                                line: {
+                                    type: 'line',
+                                    xMin: currentXValue,
+                                    xMax: currentXValue,
+                                    borderColor: 'rgb(239, 68, 68)', // red-500
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        content: 'Current Value',
+                                        display: true,
+                                        position: 'start',
+                                        backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                                    }
+                                },
+                                // A point marker for the patient's exact (X, Y)
+                                point: {
+                                    type: 'point',
+                                    xValue: currentXValue,
+                                    yValue: currentYValue,
+                                    backgroundColor: 'rgb(239, 68, 68)',
+                                    radius: 6,
+                                    borderColor: 'rgb(255, 255, 255)',
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'You are here',
+                                        display: true,
+                                        position: 'end',
+                                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                                        yAdjust: -10
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Main function to update the entire app
+         */
+        function updateApp() {
+            // 1. Get current values from the form
+            const inputs = [
+                parseFloat(document.getElementById('pregnancies').value),
+                parseFloat(document.getElementById('glucose').value),
+                parseFloat(document.getElementById('bloodPressure').value),
+                parseFloat(document.getElementById('skinThickness').value),
+                parseFloat(document.getElementById('insulin').value),
+                parseFloat(document.getElementById('bmi').value),
+                parseFloat(document.getElementById('dpf').value),
+                parseFloat(document.getElementById('age').value)
+            ];
+
+            // 2. Get the single prediction result
+            const result = predictDiabetes(inputs);
+
+            // 3. Update the prediction text
+            updatePrediction(result);
+
+            // 4. Redraw the what-if graph, passing in the current inputs AND result
+            drawWhatIfGraph(inputs, result);
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('input', updateApp);
+        whatIfSelect.addEventListener('change', updateApp);
+        document.addEventListener('DOMContentLoaded', updateApp);
+
+    </script>
+</body>
+</html>
